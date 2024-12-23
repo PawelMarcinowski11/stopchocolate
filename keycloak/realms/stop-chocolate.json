@@ -1,0 +1,26 @@
+[
+  {
+    "id": "realm-stop-chocolate",
+    "realm": "realm-stop-chocolate",
+    "enabled": true,
+    "clients": [
+      {
+        "clientId": "client-stop-chocolate-backend",
+        "enabled": true,
+        "clientAuthenticatorType": "client-secret",
+        "secret": "${KEYCLOAK_CLIENT_SECRET}",
+        "redirectUris": [],
+        "protocol": "openid-connect",
+        "publicClient": true
+      }
+    ],
+    "roles": {
+      "realm": [
+        {
+          "name": "user",
+          "description": "Role for users"
+        }
+      ]
+    }
+  }
+]
