@@ -1,11 +1,11 @@
 [
   {
-    "id": "realm-stop-chocolate",
-    "realm": "realm-stop-chocolate",
+    "id": "${REALM_ID}",
+    "realm": "${REALM_NAME}",
     "enabled": true,
     "clients": [
       {
-        "clientId": "client-stop-chocolate-backend",
+        "clientId": "${CLIENT_ID}",
         "enabled": true,
         "clientAuthenticatorType": "client-secret",
         "secret": "${KEYCLOAK_CLIENT_SECRET}",
