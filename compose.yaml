@@ -34,3 +34,22 @@ services:
       - --import-realm
     volumes:
       - ./keycloak/realms:/opt/keycloak/data/import
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: stopchocolate-backend:latest
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://auth:8080/realms/${REALM_NAME}
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://auth:8080/realms/${REALM_NAME}/protocol/openid-connect/certs
+      KEYCLOAK_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KEYCLOAK_REALM: ${REALM_NAME}
+      KEYCLOAK_CLIENT_ID: ${CLIENT_ID}
+    depends_on:
+      - db
+      - auth

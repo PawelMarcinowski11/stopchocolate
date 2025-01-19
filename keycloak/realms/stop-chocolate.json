@@ -3,6 +3,14 @@
     "id": "${REALM_ID}",
     "realm": "${REALM_NAME}",
     "enabled": true,
+    "verifyEmail": false,
+    "registrationAllowed": true,
+    "defaultRoles": [
+      "user"
+    ],
+    "attributes": {
+      "userProfileEnabled": true
+    },
     "clients": [
       {
         "clientId": "${CLIENT_ID}",
@@ -11,7 +19,9 @@
         "secret": "${KEYCLOAK_CLIENT_SECRET}",
         "redirectUris": [],
         "protocol": "openid-connect",
-        "publicClient": true
+        "publicClient": true,
+        "directAccessGrantsEnabled": true,
+        "standardFlowEnabled": false
       }
     ],
     "roles": {
@@ -21,6 +31,17 @@
           "description": "Role for users"
         }
       ]
-    }
+    },
+    "requiredActions": [
+      {
+        "alias": "VERIFY_PROFILE",
+        "name": "Verify Profile",
+        "providerId": "VERIFY_PROFILE",
+        "enabled": false,
+        "defaultAction": false,
+        "priority": 10,
+        "config": {}
+      }
+    ]
   }
 ]
