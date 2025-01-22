@@ -10,13 +10,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +23,12 @@ import business.marcinowski.stopchocolate.auth.dto.LoginRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.RefreshRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.RegisterRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.TokenResponseDto;
+import business.marcinowski.stopchocolate.auth.exception.login.InvalidCredentialsException;
+import business.marcinowski.stopchocolate.auth.exception.registration.EmailAlreadyExistsException;
+import business.marcinowski.stopchocolate.auth.exception.registration.UsernameAlreadyExistsException;
+import business.marcinowski.stopchocolate.auth.exception.service.KeycloakServiceException;
+import business.marcinowski.stopchocolate.auth.exception.token.InvalidTokenException;
+import business.marcinowski.stopchocolate.auth.exception.token.TokenExpiredException;
 import jakarta.ws.rs.core.Response;
 
 @Service
@@ -46,21 +50,49 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public TokenResponseDto login(LoginRequestDto credentials) {
-        credentials.setGrantType("password");
-        credentials.setClientId(clientId);
-        return executeTokenRequest(credentials);
+        try {
+            credentials.setGrantType("password");
+            credentials.setClientId(clientId);
+            return executeTokenRequest(credentials);
+        } catch (Exception e) {
+            if (e.getMessage().contains("invalid_grant")) {
+                throw new InvalidCredentialsException("Invalid username or password");
+            }
+            throw new KeycloakServiceException("Authentication service unavailable");
+        }
     }
 
     @Override
     public TokenResponseDto refresh(RefreshRequestDto refreshRequest) {
-        refreshRequest.setGrantType("refresh_token");
-        refreshRequest.setClientId(clientId);
-        return executeTokenRequest(refreshRequest);
+        try {
+            refreshRequest.setGrantType("refresh_token");
+            refreshRequest.setClientId(clientId);
+            return executeTokenRequest(refreshRequest);
+        } catch (Exception e) {
+            if (e.getMessage().contains("invalid_grant")) {
+                throw new TokenExpiredException("Token has expired");
+            } else if (e.getMessage().contains("invalid_token")) {
+                throw new InvalidTokenException("Invalid refresh token");
+            }
+            throw new KeycloakServiceException("Authentication service unavailable");
+        }
     }
 
     @Override
     public void register(RegisterRequestDto registerRequest) {
         try {
+            // Check if username exists
+            if (!keycloak.realm(realm).users()
+                    .search(registerRequest.getUsername()).isEmpty()) {
+                throw new UsernameAlreadyExistsException("Username already exists");
+            }
+
+            // Check if email exists
+            if (!keycloak.realm(realm).users()
+                    .search(registerRequest.getEmail()).isEmpty()) {
+                throw new EmailAlreadyExistsException("Email already exists");
+            }
+
             UserRepresentation user = new UserRepresentation();
             user.setEnabled(true);
             user.setUsername(registerRequest.getUsername());
@@ -69,16 +101,19 @@ public class AuthServiceImpl implements AuthService {
             CredentialRepresentation credential = new CredentialRepresentation();
             credential.setType(CredentialRepresentation.PASSWORD);
             credential.setValue(registerRequest.getPassword());
-
             user.setCredentials(Collections.singletonList(credential));
 
             Response response = keycloak.realm(realm).users().create(user);
 
             if (response.getStatus() != 201) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Registration failed");
+                throw new KeycloakServiceException("Registration failed");
             }
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Registration failed: " + e.getMessage());
+            if (e instanceof UsernameAlreadyExistsException
+                    || e instanceof EmailAlreadyExistsException) {
+                throw e;
+            }
+            throw new KeycloakServiceException("Authentication service unavailable: " + e.getMessage());
         }
     }
 
