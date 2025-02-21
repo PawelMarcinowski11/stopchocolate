@@ -1,4 +1,4 @@
-package business.marcinowski.stopchocolate.config;
+package business.marcinowski.stopchocolate.keycloak;
 
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
