@@ -1,9 +1,11 @@
 package business.marcinowski.stopchocolate.auth;
 
 import java.net.URI;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -12,8 +14,8 @@ import business.marcinowski.stopchocolate.auth.exception.InternalServerErrorExce
 import business.marcinowski.stopchocolate.auth.exception.InvalidAccessTokenException;
 import business.marcinowski.stopchocolate.auth.exception.InvalidCredentialsException;
 import business.marcinowski.stopchocolate.auth.exception.InvalidRefreshTokenException;
-import business.marcinowski.stopchocolate.auth.exception.InvalidRequestDataException;
 import business.marcinowski.stopchocolate.auth.exception.KeycloakServiceException;
+import business.marcinowski.stopchocolate.auth.exception.KeycloakUnavailableException;
 import business.marcinowski.stopchocolate.auth.exception.UsernameAlreadyExistsException;
 
 @RestControllerAdvice("business.marcinowski.stopchocolate.auth")
@@ -72,6 +74,16 @@ public class AuthExceptionHandler {
     @ExceptionHandler(KeycloakServiceException.class)
     public ProblemDetail handleKeycloakService(KeycloakServiceException e) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                e.getMessage());
+        problemDetail.setType(URI.create("https://api.stopchocolate.com/errors/auth-service-error"));
+        problemDetail.setTitle("Authentication Service Error");
+        return problemDetail;
+    }
+
+    @ExceptionHandler(KeycloakUnavailableException.class)
+    public ProblemDetail handleKeycloakUnavailable(KeycloakUnavailableException e) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.SERVICE_UNAVAILABLE,
                 e.getMessage());
         problemDetail.setType(URI.create("https://api.stopchocolate.com/errors/auth-service-unavailable"));
@@ -79,11 +91,17 @@ public class AuthExceptionHandler {
         return problemDetail;
     }
 
-    @ExceptionHandler(InvalidRequestDataException.class)
-    public ProblemDetail handleInvalidRequestData(InvalidRequestDataException e) {
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ProblemDetail handleInvalidRequestData(MethodArgumentNotValidException e) {
+        String message = e.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(error -> error.getDefaultMessage())
+                .collect(Collectors.joining(", "));
+
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
-                e.getMessage());
+                message);
         problemDetail.setType(URI.create("https://api.stopchocolate.com/errors/invalid-request-data"));
         problemDetail.setTitle("Invalid Request Data");
         return problemDetail;

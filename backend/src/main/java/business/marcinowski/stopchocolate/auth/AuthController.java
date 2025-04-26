@@ -11,6 +11,7 @@ import business.marcinowski.stopchocolate.auth.dto.LoginRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.RefreshRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.RegisterRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.TokenResponseDto;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/auth")
@@ -29,7 +30,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Void> register(@RequestBody RegisterRequestDto registerRequest) {
+    public ResponseEntity<Void> register(@RequestBody @Valid RegisterRequestDto registerRequest) {
         authService.register(registerRequest);
         return ResponseEntity.ok().build();
     }

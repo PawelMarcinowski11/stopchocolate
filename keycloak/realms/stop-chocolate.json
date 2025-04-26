@@ -42,6 +42,7 @@
       "config": {}
     }
   ],
+  "passwordPolicy": "length(${MIN_PASSWORD_LENGTH}) and maxLength(${MAX_PASSWORD_LENGTH}) and digits(${MIN_DIGITS}) and upperCase(${MIN_UPPERCASE}) and lowerCase(${MIN_LOWERCASE}) and specialChars(${MIN_SPECIAL_CHARS})",
   "smtpServer": {
     "password": "${SMTP_SERVER_PASSWORD}",
     "replyToDisplayName": "",

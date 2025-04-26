@@ -3,6 +3,7 @@ package business.marcinowski.stopchocolate.auth;
 import java.util.Collections;
 import java.util.Map;
 
+import org.apache.http.conn.HttpHostConnectException;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -14,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -29,7 +31,9 @@ import business.marcinowski.stopchocolate.auth.exception.EmailAlreadyExistsExcep
 import business.marcinowski.stopchocolate.auth.exception.InvalidCredentialsException;
 import business.marcinowski.stopchocolate.auth.exception.InvalidRefreshTokenException;
 import business.marcinowski.stopchocolate.auth.exception.KeycloakServiceException;
+import business.marcinowski.stopchocolate.auth.exception.KeycloakUnavailableException;
 import business.marcinowski.stopchocolate.auth.exception.UsernameAlreadyExistsException;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.core.Response;
 
 @Service
@@ -84,16 +88,16 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void register(RegisterRequestDto registerRequest) {
+    public void register(@Valid @RequestBody RegisterRequestDto registerRequest) {
         try {
             if (!keycloak.realm(realm).users()
                     .search(registerRequest.getUsername()).isEmpty()) {
-                throw new UsernameAlreadyExistsException("Username already exists");
+                throw new UsernameAlreadyExistsException("A user with this username already exists");
             }
 
             if (!keycloak.realm(realm).users()
-                    .search(registerRequest.getEmail()).isEmpty()) {
-                throw new EmailAlreadyExistsException("Email already exists");
+                    .searchByEmail(registerRequest.getEmail(), true).isEmpty()) {
+                throw new EmailAlreadyExistsException("A user with this email address already exists");
             }
 
             UserRepresentation user = new UserRepresentation();
@@ -111,12 +115,13 @@ public class AuthServiceImpl implements AuthService {
             if (response.getStatus() != 201) {
                 throw new KeycloakServiceException("Registration failed");
             }
+        } catch (UsernameAlreadyExistsException | EmailAlreadyExistsException | KeycloakServiceException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof UsernameAlreadyExistsException
-                    || e instanceof EmailAlreadyExistsException) {
-                throw e;
+            if (e.getCause() instanceof HttpHostConnectException) {
+                throw new KeycloakUnavailableException("Authentication service unavailable");
             }
-            throw new KeycloakServiceException("Authentication service unavailable");
+            throw new KeycloakServiceException("Authentication service error");
         }
     }
 
