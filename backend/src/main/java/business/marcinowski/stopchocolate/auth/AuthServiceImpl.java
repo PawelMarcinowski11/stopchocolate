@@ -91,7 +91,7 @@ public class AuthServiceImpl implements AuthService {
     public void register(@Valid @RequestBody RegisterRequestDto registerRequest) {
         try {
             if (!keycloak.realm(realm).users()
-                    .search(registerRequest.getUsername()).isEmpty()) {
+                    .searchByUsername(registerRequest.getUsername(), true).isEmpty()) {
                 throw new UsernameAlreadyExistsException("A user with this username already exists");
             }
 
