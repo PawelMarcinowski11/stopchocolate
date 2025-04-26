@@ -22,6 +22,13 @@ services:
       CLIENT_ID: ${CLIENT_ID}
       REALM_ID: ${REALM_ID}
       REALM_NAME: ${REALM_NAME}
+
+      SMTP_SERVER_HOST: ${SMTP_SERVER_HOST}
+      SMTP_SERVER_PORT: ${SMTP_SERVER_PORT}
+      SMTP_SERVER_USER: ${SMTP_SERVER_USER}
+      SMTP_SERVER_PASSWORD: ${SMTP_SERVER_PASSWORD}
+      SMTP_SERVER_SENDER_ADRESS: ${SMTP_SERVER_SENDER_ADRESS}
+      SMTP_SERVER_SENDER_DISPLAY_NAME: ${SMTP_SERVER_SENDER_DISPLAY_NAME}
       
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
@@ -42,7 +49,7 @@ services:
     image: stopchocolate-backend:latest
     restart: always
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT}:8080"
     environment:
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://auth:8080/realms/${REALM_NAME}
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://auth:8080/realms/${REALM_NAME}/protocol/openid-connect/certs

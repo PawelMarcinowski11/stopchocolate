@@ -44,7 +44,6 @@ public class AuthServiceAccessFilter extends OncePerRequestFilter {
                 response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                 objectMapper.writeValue(response.getOutputStream(), problemDetail);
                 return;
-
             }
             throw e;
         }
