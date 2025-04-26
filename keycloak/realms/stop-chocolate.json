@@ -1,47 +1,59 @@
-[
-  {
-    "id": "${REALM_ID}",
-    "realm": "${REALM_NAME}",
-    "enabled": true,
-    "verifyEmail": false,
-    "registrationAllowed": true,
-    "defaultRoles": [
-      "user"
-    ],
-    "attributes": {
-      "userProfileEnabled": true
-    },
-    "clients": [
+{
+  "id": "${REALM_ID}",
+  "realm": "${REALM_NAME}",
+  "enabled": true,
+  "verifyEmail": false,
+  "registrationAllowed": true,
+  "defaultRoles": [
+    "user"
+  ],
+  "attributes": {
+    "userProfileEnabled": true
+  },
+  "clients": [
+    {
+      "clientId": "${CLIENT_ID}",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${KEYCLOAK_CLIENT_SECRET}",
+      "redirectUris": [],
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": false
+    }
+  ],
+  "roles": {
+    "realm": [
       {
-        "clientId": "${CLIENT_ID}",
-        "enabled": true,
-        "clientAuthenticatorType": "client-secret",
-        "secret": "${KEYCLOAK_CLIENT_SECRET}",
-        "redirectUris": [],
-        "protocol": "openid-connect",
-        "publicClient": true,
-        "directAccessGrantsEnabled": true,
-        "standardFlowEnabled": false
-      }
-    ],
-    "roles": {
-      "realm": [
-        {
-          "name": "user",
-          "description": "Role for users"
-        }
-      ]
-    },
-    "requiredActions": [
-      {
-        "alias": "VERIFY_PROFILE",
-        "name": "Verify Profile",
-        "providerId": "VERIFY_PROFILE",
-        "enabled": false,
-        "defaultAction": false,
-        "priority": 10,
-        "config": {}
+        "name": "user",
+        "description": "Role for users"
       }
     ]
+  },
+  "requiredActions": [
+    {
+      "alias": "VERIFY_PROFILE",
+      "name": "Verify Profile",
+      "providerId": "VERIFY_PROFILE",
+      "enabled": false,
+      "defaultAction": false,
+      "priority": 10,
+      "config": {}
+    }
+  ],
+  "smtpServer": {
+    "password": "${SMTP_SERVER_PASSWORD}",
+    "replyToDisplayName": "",
+    "starttls": "true",
+    "auth": "true",
+    "port": "${SMTP_SERVER_PORT}",
+    "host": "${SMTP_SERVER_HOST}",
+    "replyTo": "",
+    "from": "${SMTP_SERVER_SENDER_ADRESS}",
+    "fromDisplayName": "${SMTP_SERVER_SENDER_DISPLAY_NAME}",
+    "envelopeFrom": "",
+    "ssl": "false",
+    "user": "${SMTP_SERVER_USER}"
   }
-]
+}
