@@ -33,7 +33,6 @@ import business.marcinowski.stopchocolate.auth.exception.InvalidRefreshTokenExce
 import business.marcinowski.stopchocolate.auth.exception.KeycloakServiceException;
 import business.marcinowski.stopchocolate.auth.exception.KeycloakUnavailableException;
 import business.marcinowski.stopchocolate.auth.exception.UsernameAlreadyExistsException;
-import jakarta.validation.Valid;
 import jakarta.ws.rs.core.Response;
 
 @Service
@@ -88,7 +87,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void register(@Valid @RequestBody RegisterRequestDto registerRequest) {
+    public void register(RegisterRequestDto registerRequest) {
         try {
             if (!keycloak.realm(realm).users()
                     .searchByUsername(registerRequest.getUsername(), true).isEmpty()) {
