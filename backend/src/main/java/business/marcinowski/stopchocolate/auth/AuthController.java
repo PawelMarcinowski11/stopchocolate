@@ -20,12 +20,12 @@ public class AuthController {
     private AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponseDto> login(@RequestBody LoginRequestDto credentials) {
+    public ResponseEntity<TokenResponseDto> login(@RequestBody @Valid LoginRequestDto credentials) {
         return ResponseEntity.ok(authService.login(credentials));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<TokenResponseDto> refresh(@RequestBody RefreshRequestDto refreshRequest) {
+    public ResponseEntity<TokenResponseDto> refresh(@RequestBody @Valid RefreshRequestDto refreshRequest) {
         return ResponseEntity.ok(authService.refresh(refreshRequest));
     }
 

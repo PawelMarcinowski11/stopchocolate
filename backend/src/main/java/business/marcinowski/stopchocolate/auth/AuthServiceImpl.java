@@ -1,7 +1,6 @@
 package business.marcinowski.stopchocolate.auth;
 
 import java.util.Collections;
-import java.util.Map;
 
 import org.apache.http.conn.HttpHostConnectException;
 import org.keycloak.admin.client.Keycloak;
@@ -18,9 +17,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import business.marcinowski.stopchocolate.auth.dto.LoginRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.RefreshRequestDto;
@@ -55,9 +51,12 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public TokenResponseDto login(LoginRequestDto credentials) {
         try {
-            credentials.setGrantType("password");
-            credentials.setClientId(clientId);
-            return executeTokenRequest(credentials);
+            MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+            formData.add("username", credentials.getUsername());
+            formData.add("password", credentials.getPassword());
+            formData.add("grant_type", "password");
+            formData.add("client_id", clientId);
+            return executeTokenRequest(formData);
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode().value() == 401) {
                 throw new InvalidCredentialsException("Invalid username or password");
@@ -71,9 +70,11 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public TokenResponseDto refresh(RefreshRequestDto refreshRequest) {
         try {
-            refreshRequest.setGrantType("refresh_token");
-            refreshRequest.setClientId(clientId);
-            return executeTokenRequest(refreshRequest);
+            MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+            formData.add("refresh_token", refreshRequest.getRefreshToken());
+            formData.add("grant_type", "refresh_token");
+            formData.add("client_id", clientId);
+            return executeTokenRequest(formData);
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode().value() == 400 && e.getMessage() != null
                     && e.getMessage().toLowerCase().contains(INVALID_GRANT_ERROR)) {
@@ -123,16 +124,10 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    private <T> TokenResponseDto executeTokenRequest(T requestDto) {
+    private TokenResponseDto executeTokenRequest(MultiValueMap<String, String> formData) {
         String tokenUrl = issuerUri + "/protocol/openid-connect/token";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        Map<String, Object> properties = new ObjectMapper().convertValue(requestDto,
-                new TypeReference<Map<String, Object>>() {
-                });
-        properties.forEach((key, value) -> formData.add(key, value.toString()));
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(formData, headers);
         return restTemplate.postForObject(tokenUrl, request, TokenResponseDto.class);
