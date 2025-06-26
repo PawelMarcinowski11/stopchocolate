@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.mail.MailException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -88,6 +89,16 @@ public class AuthExceptionHandler {
                 e.getMessage());
         problemDetail.setType(URI.create("https://api.stopchocolate.com/errors/auth-service-unavailable"));
         problemDetail.setTitle("Authentication Service Unavailable");
+        return problemDetail;
+    }
+
+    @ExceptionHandler(MailException.class)
+    public ProblemDetail handleMailException(MailException e) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                e.getMessage());
+        problemDetail.setType(URI.create("https://api.stopchocolate.com/errors/mail-service-unavailable"));
+        problemDetail.setTitle("Mail Service Unavailable");
         return problemDetail;
     }
 

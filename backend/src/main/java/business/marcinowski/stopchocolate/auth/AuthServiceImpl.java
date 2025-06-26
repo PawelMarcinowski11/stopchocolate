@@ -1,6 +1,12 @@
 package business.marcinowski.stopchocolate.auth;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 import org.apache.http.conn.HttpHostConnectException;
 import org.keycloak.admin.client.Keycloak;
@@ -18,16 +24,25 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import business.marcinowski.stopchocolate.auth.dto.ForgotPasswordRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.LoginRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.RefreshRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.RegisterRequestDto;
+import business.marcinowski.stopchocolate.auth.dto.ResetPasswordRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.TokenResponseDto;
+import business.marcinowski.stopchocolate.auth.dto.ValidateResetTokenRequestDto;
+import business.marcinowski.stopchocolate.auth.dto.ValidateResetTokenResponseDto;
+import business.marcinowski.stopchocolate.auth.entity.PasswordResetToken;
 import business.marcinowski.stopchocolate.auth.exception.EmailAlreadyExistsException;
+import business.marcinowski.stopchocolate.auth.exception.InternalServerErrorException;
 import business.marcinowski.stopchocolate.auth.exception.InvalidCredentialsException;
 import business.marcinowski.stopchocolate.auth.exception.InvalidRefreshTokenException;
 import business.marcinowski.stopchocolate.auth.exception.KeycloakServiceException;
 import business.marcinowski.stopchocolate.auth.exception.KeycloakUnavailableException;
 import business.marcinowski.stopchocolate.auth.exception.UsernameAlreadyExistsException;
+import business.marcinowski.stopchocolate.auth.repository.PasswordResetTokenRepository;
+import business.marcinowski.stopchocolate.mail.EmailService;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 
 @Service
@@ -43,10 +58,19 @@ public class AuthServiceImpl implements AuthService {
     @Value("${keycloak.client-id}")
     private String clientId;
 
+    @Value("${password-reset.token-expiry-minutes}")
+    private Long tokenExpiryTime;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Autowired
     Keycloak keycloak;
+
+    @Autowired
+    PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Autowired
+    EmailService emailService;
 
     @Override
     public TokenResponseDto login(LoginRequestDto credentials) {
@@ -121,6 +145,79 @@ public class AuthServiceImpl implements AuthService {
                 throw new KeycloakUnavailableException("Authentication service unavailable");
             }
             throw new KeycloakServiceException("Authentication service error");
+        }
+    }
+
+    @Override
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequestDto forgotPasswordRequest) {
+        try {
+            String token = UUID.randomUUID().toString();
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+
+            String userId;
+            String username;
+            List<UserRepresentation> usersFound = keycloak.realm(realm).users()
+                    .searchByEmail(forgotPasswordRequest.getEmail(), true);
+
+            if (usersFound.isEmpty()) {
+                // Exit silently without informing about wrong e-mail address
+                // to prevent data harvesting / enumeration
+                return;
+            } else {
+                userId = usersFound.getFirst().getId();
+                username = usersFound.getFirst().getUsername();
+            }
+
+            PasswordResetToken passwordResetToken = PasswordResetToken.builder()
+                    .expiryDate(Instant.now().plusSeconds(tokenExpiryTime * 60))
+                    .hashedToken(hash)
+                    .userId(userId)
+                    .build();
+
+            emailService.sendPasswordResetMail(forgotPasswordRequest.getEmail(), username, token);
+            passwordResetTokenRepository.save(passwordResetToken);
+        } catch (NoSuchAlgorithmException e) {
+            throw new InternalServerErrorException("Failed to execute forgot password flow");
+        }
+    }
+
+    @Override
+    @Transactional
+    public ValidateResetTokenResponseDto validateResetToken(ValidateResetTokenRequestDto validateResetTokenRequest) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest
+                    .digest(validateResetTokenRequest.getPasswordResetToken().getBytes(StandardCharsets.UTF_8));
+            ValidateResetTokenResponseDto response = new ValidateResetTokenResponseDto();
+            response.setValid(
+                    passwordResetTokenRepository.findByHashedTokenAndExpiryDateAfter(hash, Instant.now()).isPresent());
+            return response;
+        } catch (NoSuchAlgorithmException e) {
+            throw new InternalServerErrorException("Failed to validate password reset token");
+        }
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequestDto resetPasswordRequest) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(resetPasswordRequest.getPasswordResetToken().getBytes(StandardCharsets.UTF_8));
+            PasswordResetToken passwordResetToken = passwordResetTokenRepository
+                    .findByHashedTokenAndExpiryDateAfter(hash, Instant.now()).orElse(null);
+            if (passwordResetToken != null) {
+                CredentialRepresentation passwordCredentials = new CredentialRepresentation();
+                passwordCredentials.setTemporary(false);
+                passwordCredentials.setType(CredentialRepresentation.PASSWORD);
+                passwordCredentials.setValue(resetPasswordRequest.getPassword());
+
+                keycloak.realm(realm).users().get(passwordResetToken.getUserId()).resetPassword(passwordCredentials);
+                passwordResetTokenRepository.delete(passwordResetToken);
+            }
+        } catch (NoSuchAlgorithmException e) {
+            throw new InternalServerErrorException("Failed to reset password");
         }
     }
 

@@ -51,7 +51,7 @@
     "port": "${SMTP_SERVER_PORT}",
     "host": "${SMTP_SERVER_HOST}",
     "replyTo": "",
-    "from": "${SMTP_SERVER_SENDER_ADRESS}",
+    "from": "${SMTP_SERVER_SENDER_ADDRESS}",
     "fromDisplayName": "${SMTP_SERVER_SENDER_DISPLAY_NAME}",
     "envelopeFrom": "",
     "ssl": "false",

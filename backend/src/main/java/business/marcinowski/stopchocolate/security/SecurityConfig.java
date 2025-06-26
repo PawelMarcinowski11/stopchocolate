@@ -44,6 +44,15 @@ public class SecurityConfig {
                                 .permitAll()
                                 .requestMatchers(new AntPathRequestMatcher("/auth/refresh", HttpMethod.POST.toString()))
                                 .permitAll()
+                                .requestMatchers(new AntPathRequestMatcher("/auth/forgot-password",
+                                                HttpMethod.POST.toString()))
+                                .permitAll()
+                                .requestMatchers(new AntPathRequestMatcher("/auth/validate-reset-token",
+                                                HttpMethod.POST.toString()))
+                                .permitAll()
+                                .requestMatchers(new AntPathRequestMatcher("/auth/reset-password",
+                                                HttpMethod.POST.toString()))
+                                .permitAll()
                                 .requestMatchers(
                                                 new AntPathRequestMatcher("/auth/register", HttpMethod.POST.toString()))
                                 .permitAll()

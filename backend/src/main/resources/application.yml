@@ -9,6 +9,26 @@ spring:
         jwt:
           issuer-uri: http://localhost:${KEYCLOAK_PORT}/realms/${REALM_NAME}
           jwk-set-uri: http://localhost:${KEYCLOAK_PORT}/realms/${REALM_NAME}/protocol/openid-connect/certs
+  datasource:
+    url: jdbc:postgresql://localhost:${DB_PORT}/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  mail:
+    host: ${SMTP_SERVER_HOST}
+    port: ${SMTP_SERVER_PORT}
+    username: ${SMTP_SERVER_USER}
+    password: ${SMTP_SERVER_PASSWORD}
+    sender-address: ${SMTP_SERVER_SENDER_ADDRESS}
+    sender-display-name: ${SMTP_SERVER_SENDER_DISPLAY_NAME}
+    properties:
+      smtp:
+        auth: true
+        starttls:
+          enable: true
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
 
 keycloak:
   admin-username: ${KEYCLOAK_ADMIN}
@@ -16,3 +36,6 @@ keycloak:
   realm: ${REALM_NAME}
   client-id: ${CLIENT_ID}
   client-secret: ${KEYCLOAK_CLIENT_SECRET}
+
+password-reset:
+  token-expiry-minutes: ${PASSWORD_RESET_TOKEN_EXPIRY_MINUTES}
