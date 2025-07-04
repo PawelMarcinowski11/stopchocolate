@@ -28,7 +28,7 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(credentials));
     }
 
-    @PostMapping("/refresh")
+    @PostMapping("/token/refresh")
     public ResponseEntity<TokenResponseDto> refresh(@RequestBody @Valid RefreshRequestDto refreshRequest) {
         return ResponseEntity.ok(authService.refresh(refreshRequest));
     }
@@ -39,20 +39,20 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/forgot-password")
+    @PostMapping("/password/forgot")
     public ResponseEntity<Void> forgotPassword(
             @RequestBody @Valid ForgotPasswordRequestDto forgotPasswordRequest) {
         authService.forgotPassword(forgotPasswordRequest);
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/validate-reset-token")
+    @PostMapping("/password/reset/validate")
     public ResponseEntity<ValidateResetTokenResponseDto> validateResetToken(
             @RequestBody @Valid ValidateResetTokenRequestDto validateResetTokenRequest) {
         return ResponseEntity.ok(authService.validateResetToken(validateResetTokenRequest));
     }
 
-    @PostMapping("/reset-password")
+    @PostMapping("/password/reset")
     public ResponseEntity<Void> resetPassword(@RequestBody @Valid ResetPasswordRequestDto resetPasswordRequest) {
         authService.resetPassword(resetPasswordRequest);
         return ResponseEntity.ok().build();
