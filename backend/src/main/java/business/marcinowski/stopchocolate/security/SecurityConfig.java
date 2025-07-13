@@ -37,7 +37,6 @@ public class SecurityConfig {
                 http.sessionManagement(management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
                 http.csrf(csrf -> csrf.disable());
                 http.cors(cors -> cors.disable());
-                http.sessionManagement(management -> management.disable());
                 http.logout(logout -> logout.disable());
                 http.authorizeHttpRequests(auth -> auth
                                 .requestMatchers(new AntPathRequestMatcher("/auth/login", HttpMethod.POST.toString()))
@@ -56,6 +55,17 @@ public class SecurityConfig {
                                 .requestMatchers(
                                                 new AntPathRequestMatcher("/auth/register", HttpMethod.POST.toString()))
                                 .permitAll()
+                                .requestMatchers(
+                                                new AntPathRequestMatcher("/auth/password",
+                                                                HttpMethod.PATCH.toString()))
+                                .authenticated()
+                                .requestMatchers(
+                                                new AntPathRequestMatcher("/auth/username",
+                                                                HttpMethod.PATCH.toString()))
+                                .authenticated()
+                                .requestMatchers(
+                                                new AntPathRequestMatcher("/auth/email", HttpMethod.PATCH.toString()))
+                                .authenticated()
                                 .anyRequest().denyAll());
                 return http.build();
         }
