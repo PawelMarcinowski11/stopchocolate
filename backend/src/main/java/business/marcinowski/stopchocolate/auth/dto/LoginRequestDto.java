@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 public class LoginRequestDto {
     @NotBlank(message = "Username is required")
-    @Size(min = 3, max = 255, message = "Username must be between 3 and 255 characters")
+    @Size(min = 3, max = 255, message = "Username must be between 3 and 255 characters long")
     private String username;
 
     @NotBlank(message = "Password is required")
