@@ -2,6 +2,7 @@ package business.marcinowski.stopchocolate.auth;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,6 +14,9 @@ import business.marcinowski.stopchocolate.auth.dto.RefreshRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.RegisterRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.ResetPasswordRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.TokenResponseDto;
+import business.marcinowski.stopchocolate.auth.dto.UpdateEmailRequestDto;
+import business.marcinowski.stopchocolate.auth.dto.UpdatePasswordRequestDto;
+import business.marcinowski.stopchocolate.auth.dto.UpdateUsernameRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.ValidateResetTokenRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.ValidateResetTokenResponseDto;
 import jakarta.validation.Valid;
@@ -55,6 +59,27 @@ public class AuthController {
     @PostMapping("/password/reset")
     public ResponseEntity<Void> resetPassword(@RequestBody @Valid ResetPasswordRequestDto resetPasswordRequest) {
         authService.resetPassword(resetPasswordRequest);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/password")
+    public ResponseEntity<Void> updatePassword(
+            @RequestBody @Valid UpdatePasswordRequestDto updatePasswordRequestDto) {
+        authService.updatePassword(updatePasswordRequestDto);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/username")
+    public ResponseEntity<Void> updateUsername(
+            @RequestBody @Valid UpdateUsernameRequestDto updateUsernameRequestDto) {
+        authService.updateUsername(updateUsernameRequestDto);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/email")
+    public ResponseEntity<Void> updateEmail(
+            @RequestBody @Valid UpdateEmailRequestDto updateEmailRequestDto) {
+        authService.updateEmail(updateEmailRequestDto);
         return ResponseEntity.ok().build();
     }
 }

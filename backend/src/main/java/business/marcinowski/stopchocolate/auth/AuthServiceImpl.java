@@ -17,6 +17,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -30,6 +32,9 @@ import business.marcinowski.stopchocolate.auth.dto.RefreshRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.RegisterRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.ResetPasswordRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.TokenResponseDto;
+import business.marcinowski.stopchocolate.auth.dto.UpdateEmailRequestDto;
+import business.marcinowski.stopchocolate.auth.dto.UpdatePasswordRequestDto;
+import business.marcinowski.stopchocolate.auth.dto.UpdateUsernameRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.ValidateResetTokenRequestDto;
 import business.marcinowski.stopchocolate.auth.dto.ValidateResetTokenResponseDto;
 import business.marcinowski.stopchocolate.auth.entity.PasswordResetToken;
@@ -75,12 +80,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public TokenResponseDto login(LoginRequestDto credentials) {
         try {
-            MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-            formData.add("username", credentials.getUsername());
-            formData.add("password", credentials.getPassword());
-            formData.add("grant_type", "password");
-            formData.add("client_id", clientId);
-            return executeTokenRequest(formData);
+            return attemptLogin(credentials.getUsername(), credentials.getPassword());
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode().value() == 401) {
                 throw new InvalidCredentialsException("Invalid username or password");
@@ -213,12 +213,85 @@ public class AuthServiceImpl implements AuthService {
                 passwordCredentials.setType(CredentialRepresentation.PASSWORD);
                 passwordCredentials.setValue(resetPasswordRequest.getPassword());
 
-                keycloak.realm(realm).users().get(passwordResetToken.getUserId()).resetPassword(passwordCredentials);
+                keycloak.realm(realm).users().get(passwordResetToken.getUserId())
+                        .resetPassword(passwordCredentials);
                 passwordResetTokenRepository.delete(passwordResetToken);
             }
         } catch (NoSuchAlgorithmException e) {
             throw new InternalServerErrorException("Failed to reset password");
         }
+    }
+
+    @Override
+    public void updatePassword(UpdatePasswordRequestDto updatePasswordRequestDto) {
+        String userId = getUserIdFromSecurityContextHolder();
+        String username = keycloak.realm(realm).users().get(userId).toRepresentation().getUsername();
+
+        try {
+            attemptLogin(username, updatePasswordRequestDto.getCurrentPassword());
+        } catch (HttpClientErrorException e) {
+            if (e.getStatusCode().value() == 401) {
+                throw new InvalidCredentialsException("Current password is incorrect");
+            }
+            throw new KeycloakServiceException("Unable to verify the current password");
+        } catch (RestClientException e) {
+            throw new KeycloakServiceException("Unable to connect to authentication service");
+        }
+
+        CredentialRepresentation passwordCredentials = new CredentialRepresentation();
+        passwordCredentials.setTemporary(false);
+        passwordCredentials.setType(CredentialRepresentation.PASSWORD);
+        passwordCredentials.setValue(updatePasswordRequestDto.getNewPassword());
+
+        keycloak.realm(realm).users().get(userId).resetPassword(passwordCredentials);
+    }
+
+    @Override
+    public void updateUsername(UpdateUsernameRequestDto updateUsernameRequestDto) {
+        String userId = getUserIdFromSecurityContextHolder();
+        List<UserRepresentation> matchingUsers = keycloak.realm(realm).users()
+                .searchByUsername(updateUsernameRequestDto.getUsername(), true);
+
+        if (!matchingUsers.isEmpty()
+                && (matchingUsers.size() > 1 || !matchingUsers.getFirst().getId().equals(userId))) {
+            throw new UsernameAlreadyExistsException("Username already taken");
+        }
+
+        UserRepresentation userRepresentation = keycloak.realm(realm).users().get(userId).toRepresentation();
+        userRepresentation.setUsername(updateUsernameRequestDto.getUsername());
+        keycloak.realm(realm).users().get(userId).update(userRepresentation);
+    }
+
+    @Override
+    public void updateEmail(UpdateEmailRequestDto updateEmailRequestDto) {
+        String userId = getUserIdFromSecurityContextHolder();
+        List<UserRepresentation> matchingUsers = keycloak.realm(realm).users()
+                .searchByEmail(updateEmailRequestDto.getEmail(), true);
+
+        if (!matchingUsers.isEmpty()
+                && (matchingUsers.size() > 1 || !matchingUsers.getFirst().getId().equals(userId))) {
+            throw new EmailAlreadyExistsException("Email already taken");
+        }
+
+        UserRepresentation userRepresentation = keycloak.realm(realm).users().get(userId).toRepresentation();
+        userRepresentation.setEmail(updateEmailRequestDto.getEmail());
+        keycloak.realm(realm).users().get(userId).update(userRepresentation);
+    }
+
+    private String getUserIdFromSecurityContextHolder() {
+        JwtAuthenticationToken authentication = (JwtAuthenticationToken) SecurityContextHolder.getContext()
+                .getAuthentication();
+        String userId = authentication.getToken().getSubject();
+        return userId;
+    }
+
+    private TokenResponseDto attemptLogin(String username, String password) {
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add("username", username);
+        formData.add("password", password);
+        formData.add("grant_type", "password");
+        formData.add("client_id", clientId);
+        return executeTokenRequest(formData);
     }
 
     private TokenResponseDto executeTokenRequest(MultiValueMap<String, String> formData) {
