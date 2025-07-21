@@ -59,9 +59,9 @@ public class EmailServiceImpl implements EmailService {
 
       mailSender.send(message);
     } catch (IOException e) {
-      throw new InternalServerErrorException("Failed to prepare e-mail message");
+      throw new InternalServerErrorException("Failed to prepare email message");
     } catch (MessagingException | MailException e) {
-      throw new MailSendException("Failed to send e-mail message");
+      throw new MailSendException("Failed to send email message");
     }
   }
 }

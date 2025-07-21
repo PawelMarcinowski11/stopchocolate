@@ -162,7 +162,7 @@ public class AuthServiceImpl implements AuthService {
                     .searchByEmail(forgotPasswordRequest.getEmail(), true);
 
             if (usersFound.isEmpty()) {
-                // Exit silently without informing about wrong e-mail address
+                // Exit silently without informing about wrong email address
                 // to prevent data harvesting / enumeration
                 return;
             } else {
