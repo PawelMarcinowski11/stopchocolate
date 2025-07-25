@@ -10,7 +10,6 @@ public class RegisterRequestDto {
     @NotBlank(message = "Username is required")
     private String username;
 
-    @NotBlank(message = "Email is required")
     @Email(message = "Invalid email address format")
     private String email;
 

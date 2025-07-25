@@ -118,7 +118,7 @@ public class AuthServiceImpl implements AuthService {
                 throw new UsernameAlreadyExistsException("A user with this username already exists");
             }
 
-            if (!keycloak.realm(realm).users()
+            if (registerRequest.getEmail() != null && !keycloak.realm(realm).users()
                     .searchByEmail(registerRequest.getEmail(), true).isEmpty()) {
                 throw new EmailAlreadyExistsException("A user with this email address already exists");
             }
@@ -126,7 +126,10 @@ public class AuthServiceImpl implements AuthService {
             UserRepresentation user = new UserRepresentation();
             user.setEnabled(true);
             user.setUsername(registerRequest.getUsername());
-            user.setEmail(registerRequest.getEmail());
+
+            if (registerRequest.getEmail() != null) {
+                user.setEmail(registerRequest.getEmail());
+            }
 
             CredentialRepresentation credential = new CredentialRepresentation();
             credential.setType(CredentialRepresentation.PASSWORD);
