@@ -41,19 +41,20 @@ public class SecurityConfig {
                 http.authorizeHttpRequests(auth -> auth
                                 .requestMatchers(new AntPathRequestMatcher("/auth/login", HttpMethod.POST.toString()))
                                 .permitAll()
-                                .requestMatchers(new AntPathRequestMatcher("/auth/refresh", HttpMethod.POST.toString()))
-                                .permitAll()
-                                .requestMatchers(new AntPathRequestMatcher("/auth/forgot-password",
-                                                HttpMethod.POST.toString()))
-                                .permitAll()
-                                .requestMatchers(new AntPathRequestMatcher("/auth/validate-reset-token",
-                                                HttpMethod.POST.toString()))
-                                .permitAll()
-                                .requestMatchers(new AntPathRequestMatcher("/auth/reset-password",
+                                .requestMatchers(new AntPathRequestMatcher("/auth/token/refresh",
                                                 HttpMethod.POST.toString()))
                                 .permitAll()
                                 .requestMatchers(
                                                 new AntPathRequestMatcher("/auth/register", HttpMethod.POST.toString()))
+                                .permitAll()
+                                .requestMatchers(new AntPathRequestMatcher("/auth/password/forgot",
+                                                HttpMethod.POST.toString()))
+                                .permitAll()
+                                .requestMatchers(new AntPathRequestMatcher("/auth/password/reset/validate",
+                                                HttpMethod.POST.toString()))
+                                .permitAll()
+                                .requestMatchers(new AntPathRequestMatcher("/auth/password/reset",
+                                                HttpMethod.POST.toString()))
                                 .permitAll()
                                 .requestMatchers(
                                                 new AntPathRequestMatcher("/auth/password",
