@@ -66,6 +66,9 @@ public class AuthServiceImpl implements AuthService {
     @Value("${password-reset.token-expiry-minutes}")
     private Long tokenExpiryTime;
 
+    @Value("${keycloak.use-offline-sessions}")
+    private boolean useOfflineSessions;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Autowired
@@ -80,7 +83,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public TokenResponseDto login(LoginRequestDto credentials) {
         try {
-            return attemptLogin(credentials.getUsername(), credentials.getPassword());
+            return attemptLogin(credentials.getUsername(), credentials.getPassword(), useOfflineSessions);
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode().value() == 401) {
                 throw new InvalidCredentialsException("Invalid username or password");
@@ -98,6 +101,9 @@ public class AuthServiceImpl implements AuthService {
             formData.add("refresh_token", refreshRequest.getRefreshToken());
             formData.add("grant_type", "refresh_token");
             formData.add("client_id", clientId);
+            if (useOfflineSessions) {
+                formData.add("scope", "offline_access");
+            }
             return executeTokenRequest(formData);
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode().value() == 400 && e.getMessage() != null
@@ -231,7 +237,7 @@ public class AuthServiceImpl implements AuthService {
         String username = keycloak.realm(realm).users().get(userId).toRepresentation().getUsername();
 
         try {
-            attemptLogin(username, updatePasswordRequestDto.getCurrentPassword());
+            attemptLogin(username, updatePasswordRequestDto.getCurrentPassword(), false);
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode().value() == 401) {
                 throw new InvalidCredentialsException("Current password is incorrect");
@@ -288,12 +294,15 @@ public class AuthServiceImpl implements AuthService {
         return userId;
     }
 
-    private TokenResponseDto attemptLogin(String username, String password) {
+    private TokenResponseDto attemptLogin(String username, String password, boolean offlineSession) {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("username", username);
         formData.add("password", password);
         formData.add("grant_type", "password");
         formData.add("client_id", clientId);
+        if (offlineSession) {
+            formData.add("scope", "offline_access");
+        }
         return executeTokenRequest(formData);
     }
 

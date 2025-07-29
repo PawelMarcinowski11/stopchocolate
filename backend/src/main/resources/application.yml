@@ -36,6 +36,7 @@ keycloak:
   realm: ${REALM_NAME}
   client-id: ${CLIENT_ID}
   client-secret: ${KEYCLOAK_CLIENT_SECRET}
+  use-offline-sessions: ${OFFLINE_SESSIONS}
 
 password-reset:
   token-expiry-minutes: ${PASSWORD_RESET_TOKEN_EXPIRY_MINUTES}
